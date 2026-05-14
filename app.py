@@ -5,7 +5,7 @@ Open: http://<your-ec2-ip>:5000
 """
 
 import os, json, smtplib, ssl
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
@@ -71,6 +71,58 @@ Shivam Garud
 @app.route("/")
 def index():
     return render_template("index.html")
+
+@app.route("/favicon.ico")
+def favicon():
+    # Return a tiny transparent 1x1 pixel ICO so browser stops 404-ing
+    ico = b'\x00\x00\x01\x00\x01\x00\x01\x01\x00\x00\x01\x00\x18\x00\x28\x00\x00\x00\x16\x00\x00\x00(\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x01\x00\x18\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1a\xd4\xff\x00\x00\x00\x00'
+    return Response(ico, mimetype="image/x-icon")
+
+@app.route("/api/test_email", methods=["POST"])
+def test_email():
+    """Send a test email to verify Gmail App Password works."""
+    data = request.json
+    test_to      = data.get("test_to", "").strip()
+    name         = data.get("name", "Shivam Garud").strip()
+    email_from   = data.get("email", "").strip()
+    app_password = data.get("app_password", "").strip()
+
+    if not email_from or not app_password:
+        return jsonify({"error": "Enter your Gmail and App Password first."}), 400
+    if not test_to:
+        return jsonify({"error": "Enter a test recipient email address."}), 400
+
+    # Remove spaces from app password (Google sometimes shows it with spaces)
+    app_password = app_password.replace(" ", "")
+
+    try:
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+            server.login(email_from, app_password)
+            msg = MIMEMultipart()
+            msg["From"]    = f"{name} <{email_from}>"
+            msg["To"]      = test_to
+            msg["Subject"] = "✅ Cold Mailer Test — Gmail App Password Working!"
+            msg.attach(MIMEText(
+                f"Hi!\n\nThis is a test email from Cold Mailer.\n\n"
+                f"Your Gmail App Password is working correctly.\n"
+                f"You're all set to send bulk cold emails!\n\n"
+                f"— Shivam Garud's Cold Mailer App", "plain"))
+            server.sendmail(email_from, test_to, msg.as_string())
+        return jsonify({"ok": True, "message": f"Test email sent to {test_to} successfully!"})
+    except smtplib.SMTPAuthenticationError:
+        return jsonify({"error": (
+            "Authentication failed!\n\n"
+            "Common fixes:\n"
+            "1. Make sure 2-Step Verification is ON in your Google Account\n"
+            "2. Use App Password (not your Gmail password)\n"
+            "3. Go to myaccount.google.com/apppasswords → Create new one\n"
+            "4. Remove spaces from the app password when pasting"
+        )}), 401
+    except smtplib.SMTPRecipientsRefused:
+        return jsonify({"error": f"Recipient address rejected: {test_to}"}), 400
+    except Exception as e:
+        return jsonify({"error": f"SMTP Error: {str(e)}"}), 500
 
 @app.route("/api/config", methods=["GET"])
 def get_config():
@@ -166,6 +218,49 @@ def generate():
         })
     return jsonify({"emails": emails})
 
+@app.route("/api/send_one", methods=["POST"])
+def send_one():
+    """Send a single email. Called in a loop from the frontend."""
+    data        = request.json
+    em          = data.get("email", {})
+    resume_path = data.get("resume_path", "")
+    cfg         = load_config()
+
+    if not cfg.get("email") or not cfg.get("app_password"):
+        return jsonify({"error": "Gmail settings not saved. Go to Settings tab first."}), 400
+    if not em.get("to"):
+        return jsonify({"error": "No recipient address"}), 400
+
+    app_password = cfg["app_password"].replace(" ", "")
+
+    print(f"[SEND_ONE] → {em.get('to')}  subject: {em.get('subject','')[:50]}")
+
+    try:
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+            server.login(cfg["email"], app_password)
+            msg = MIMEMultipart()
+            msg["From"]    = f"{cfg.get('name', 'Shivam Garud')} <{cfg['email']}>"
+            msg["To"]      = em["to"]
+            msg["Subject"] = em["subject"]
+            msg.attach(MIMEText(em["body"], "plain"))
+            if resume_path and os.path.exists(resume_path):
+                with open(resume_path, "rb") as rf:
+                    part = MIMEApplication(rf.read(), Name=os.path.basename(resume_path))
+                    part["Content-Disposition"] = f'attachment; filename="{os.path.basename(resume_path)}"'
+                    msg.attach(part)
+            server.sendmail(cfg["email"], em["to"], msg.as_string())
+            print(f"[SEND_ONE] ✅ Sent to {em['to']}")
+            return jsonify({"ok": True})
+    except smtplib.SMTPAuthenticationError:
+        return jsonify({"error": "Gmail Auth Failed — use App Password, not Gmail password"}), 401
+    except smtplib.SMTPRecipientsRefused as e:
+        return jsonify({"error": f"Recipient refused: {em['to']}"}), 400
+    except Exception as e:
+        print(f"[SEND_ONE] ❌ {em.get('to')} — {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/send", methods=["POST"])
 def send_emails():
     data = request.json
@@ -178,11 +273,14 @@ def send_emails():
     if not emails:
         return jsonify({"error": "No emails to send"}), 400
 
+    # Remove spaces from app password — Google shows it with spaces but SMTP needs none
+    app_password = cfg["app_password"].replace(" ", "")
+
     sent, failed = 0, []
     try:
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-            server.login(cfg["email"], cfg["app_password"])
+            server.login(cfg["email"], app_password)
             for em in emails:
                 try:
                     msg = MIMEMultipart()
@@ -201,7 +299,7 @@ def send_emails():
                 except Exception as e:
                     failed.append({"to": em["to"], "error": str(e)})
     except smtplib.SMTPAuthenticationError:
-        return jsonify({"error": "Gmail Auth Failed! Use App Password not your regular password."}), 401
+        return jsonify({"error": "Gmail Auth Failed! Go to Settings tab → make sure you used App Password (not Gmail password). Remove spaces from the password."}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
