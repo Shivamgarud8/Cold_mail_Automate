@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cold Mailer — Shivam Garud</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080b14;
+    --surface:  #0e1525;
+    --surface2: #131d35;
+    --border:   #1e2d4a;
+    --accent:   #00d4ff;
+    --green:    #00ffa3;
+    --red:      #ff4d6d;
+    --text:     #c8d6ef;
+    --muted:    #4a6080;
+    --mono:     'JetBrains Mono', monospace;
+    --display:  'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #0e1525, #0a1020);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 {
+    font-family: var(--display); font-size: 22px; font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header .sub { color: var(--muted); font-size: 11px; }
+  .badge { background: #7c3aed; color: #fff; font-size: 10px; font-weight: 700;
+           padding: 2px 8px; border-radius: 20px; letter-spacing: 1px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; }
+  .tab  { padding: 14px 22px; cursor: pointer; font-size: 12px; font-weight: 600;
+          color: var(--muted); border-bottom: 2px solid transparent; transition: all .2s; letter-spacing: .5px; }
+  .tab:hover  { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── PAGES ── */
+  .page         { display: none; padding: 28px 32px; max-width: 1280px; }
+  .page.active  { display: block; }
+
+  /* ── SECTION LABEL ── */
+  .sec { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: 2px;
+         text-transform: uppercase; margin-bottom: 10px;
+         display: flex; align-items: center; gap: 8px; }
+  .sec::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── CARD ── */
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+
+  /* ── INPUTS ── */
+  input[type=text], input[type=email], input[type=password],
+  input[type=number], textarea, select {
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--mono); font-size: 13px;
+    padding: 9px 13px; border-radius: 6px; outline: none;
+    transition: border .2s; width: 100%;
+  }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 180px; line-height: 1.6; }
+  label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 5px; }
+
+  /* ── BUTTONS ── */
+  .btn { padding: 9px 18px; border-radius: 6px; border: none; cursor: pointer;
+         font-family: var(--mono); font-size: 12px; font-weight: 700;
+         letter-spacing: .4px; transition: all .18s;
+         display: inline-flex; align-items: center; gap: 7px; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover   { border-color: var(--accent); color: var(--accent); }
+  .btn-danger  { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 4px 10px; font-size: 11px; }
+  .btn-danger:hover  { background: var(--red); color: #fff; }
+  .btn-green   { background: var(--green); color: #000; }
+  .btn-green:hover   { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; filter: none !important; }
+
+  /* ── FILE DROP ── */
+  .file-drop {
+    border: 1.5px dashed var(--border); border-radius: 8px;
+    padding: 26px; text-align: center; cursor: pointer; transition: all .2s;
+  }
+  .file-drop:hover, .file-drop.drag { border-color: var(--accent); background: #00d4ff08; }
+  .file-drop .icon { font-size: 30px; margin-bottom: 8px; }
+  .file-drop strong { font-size: 13px; display: block; margin-bottom: 4px; }
+  .file-drop p { color: var(--muted); font-size: 11px; }
+
+  /* ── TABLE ── */
+  .tbl-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--surface2); color: var(--accent); padding: 10px 14px;
+       text-align: left; font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+       border-bottom: 1px solid var(--border); }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr.clickable:hover td { background: #00d4ff06; cursor: pointer; }
+  tr.selected td { background: #00d4ff12; }
+
+  /* ── ROW RANGE ── */
+  .range-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+  .range-row input[type=number] { width: 74px; }
+  .range-row label { margin: 0; }
+
+  /* ── SUBJECT OPTIONS ── */
+  .subj-opt { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+              border: 1px solid var(--border); border-radius: 7px;
+              cursor: pointer; transition: all .2s; margin-bottom: 8px; }
+  .subj-opt:hover { border-color: var(--accent); }
+  .subj-opt.picked { border-color: var(--accent); background: #00d4ff0a; }
+  .subj-opt input[type=radio] { width: auto; accent-color: var(--accent); cursor: pointer; }
+  .subj-opt span { font-size: 12px; }
+
+  /* ── TWO-COL LAYOUT ── */
+  .two-col { display: grid; grid-template-columns: 360px 1fr; gap: 20px; }
+  @media(max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── EMAIL LIST ── */
+  .elist-wrap { border: 1px solid var(--border); border-radius: 8px;
+                max-height: 460px; overflow-y: auto; }
+
+  /* ── SEND BAR ── */
+  .send-bar {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 14px; margin-bottom: 20px;
+  }
+  .progress-wrap { background: var(--border); border-radius: 99px; height: 5px; width: 180px; }
+  .progress-bar  { height: 5px; border-radius: 99px;
+                   background: linear-gradient(90deg, var(--accent), var(--green));
+                   width: 0%; transition: width .4s; }
+
+  /* ── SETTINGS ── */
+  .settings-grid { display: grid; grid-template-columns: 180px 1fr; gap: 14px 18px; align-items: center; }
+  .settings-grid label { text-align: right; margin: 0; }
+  .hint { background: #00d4ff07; border: 1px solid var(--border); border-radius: 8px;
+          padding: 14px 18px; font-size: 11px; color: var(--muted);
+          line-height: 1.9; margin-top: 18px; }
+  .hint a { color: var(--accent); text-decoration: none; }
+
+  /* ── STATUS BAR ── */
+  .statusbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #06090f; border-top: 1px solid var(--border);
+    padding: 7px 24px; font-size: 11px;
+    display: flex; align-items: center; justify-content: space-between; z-index: 200;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+         display: inline-block; margin-right: 7px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; top: 22px; right: 22px;
+    padding: 11px 18px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    z-index: 999; transform: translateX(130%); transition: transform .3s;
+    max-width: 340px; pointer-events: none;
+  }
+  #toast.show { transform: translateX(0); }
+  #toast.ok  { background: #00ffa314; border: 1px solid var(--green); color: var(--green); }
+  #toast.err { background: #ff4d6d14; border: 1px solid var(--red);   color: var(--red); }
+
+  /* ── MISC ── */
+  .count { background: #7c3aed; color: #fff; font-size: 11px; padding: 2px 9px; border-radius: 20px; }
+  .spacer { height: 70px; }
+  .placeholder { color: var(--muted); font-size: 13px; text-align: center; margin-top: 50px; padding: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+<div class="header">
+  <h1>✉ COLD MAILER</h1>
+  <span class="badge">FLASK</span>
+  <span class="sub">DevOps Job Outreach — Shivam Garud</span>
+</div>
+
+<!-- ══ TABS ════════════════════════════════════════════════════════════════ -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('upload',   this)">📂 Upload &amp; Generate</div>
+  <div class="tab"        onclick="switchTab('preview',  this)">📧 Preview &amp; Send</div>
+  <div class="tab"        onclick="switchTab('settings', this)">⚙️ Settings</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB 1 — UPLOAD & GENERATE
+══════════════════════════════════════════════════════════════════════════════ -->
+<div class="page active" id="page-upload">
+
+  <!-- Excel Upload -->
+  <div class="card">
+    <div class="sec">Step 1 — Excel File</div>
+    <div class="file-drop" id="excel-drop"
+         onclick="document.getElementById('excel-input').click()"
+         ondragover="event.preventDefault();this.classList.add('drag')"
+         ondragleave="this.classList.remove('drag')"
+         ondrop="dropFile(event,'excel')">
+      <div class="icon">📊</div>
+      <strong id="excel-name">Click to upload Excel (.xlsx)</strong>
+      <p>Expected columns: Sr No · Name · Email · Title · Company</p>
+    </div>
+    <input type="file" id="excel-input" accept=".xlsx,.xls" style="display:none"
+           onchange="uploadExcel(this.files[0])">
+    <p style="margin-top:10px;font-size:11px;color:var(--muted)" id="excel-status">No file loaded</p>
+  </div>
+
+  <!-- Excel Table Preview -->
+  <div class="card" id="excel-preview-card" style="display:none">
+    <div class="sec">Data Preview</div>
+    <div class="tbl-wrap" style="max-height:250px;overflow-y:auto">
+      <table id="excel-table">
+        <thead>
+          <tr><th>#</th><th>Sr</th><th>Name</th><th>Email</th><th>Title</th><th>Company</th></tr>
+        </thead>
+        <tbody id="excel-tbody"></tbody>
+      </table>
+    </div>
+    <div class="range-row">
+      <label>Select Rows:</label>
+      From <input type="number" id="row-from" value="1" min="1">
+      To   <input type="number" id="row-to"   value="10" min="1">
+      <button class="btn btn-ghost" onclick="selectAll()" style="font-size:11px;padding:7px 14px">Select All</button>
+    </div>
+  </div>
+
+  <!-- Resume Upload -->
+  <div class="card">
+    <div class="sec">Step 2 — Resume PDF</div>
+    <div class="file-drop" id="resume-drop"
+         onclick="document.getElementById('resume-input').click()"
+         ondragover="event.preventDefault();this.classList.add('drag')"
+         ondragleave="this.classList.remove('drag')"
+         ondrop="dropFile(event,'resume')">
+      <div class="icon">📄</div>
+      <strong id="resume-name">Click to upload Resume (PDF)</strong>
+      <p>Attached automatically to every email</p>
+    </div>
+    <input type="file" id="resume-input" accept=".pdf" style="display:none"
+           onchange="uploadResume(this.files[0])">
+  </div>
+
+  <!-- Subject Selection -->
+  <div class="card">
+    <div class="sec">Step 3 — Email Subject</div>
+    <div id="subject-list"></div>
+  </div>
+
+  <!-- Generate Button -->
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+    <button class="btn btn-primary" onclick="generateEmails()"
+            style="font-size:14px;padding:14px 30px">
+      ⚡ GENERATE COLD EMAILS
+    </button>
+    <span style="color:var(--muted);font-size:12px">
+      → Creates a unique personalized email for each selected row
+    </span>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB 2 — PREVIEW & SEND
+══════════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-preview">
+
+  <!-- Send Bar -->
+  <div class="send-bar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="color:var(--muted);font-size:12px">Emails ready:</span>
+      <span class="count" id="email-count">0</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div id="prog-wrap" style="display:none">
+        <div class="progress-wrap"><div class="progress-bar" id="prog-bar"></div></div>
+        <div id="prog-txt" style="font-size:10px;color:var(--muted);margin-top:4px;text-align:center"></div>
+      </div>
+      <button class="btn btn-green" id="send-btn" onclick="sendAll()"
+              style="font-size:13px;padding:13px 26px">
+        🚀 SEND ALL EMAILS
+      </button>
+    </div>
+  </div>
+
+  <!-- Two column layout -->
+  <div class="two-col">
+
+    <!-- Left: email list -->
+    <div>
+      <div class="sec">Email List</div>
+      <div class="elist-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Name</th><th>To</th><th></th></tr>
+          </thead>
+          <tbody id="email-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: preview/edit -->
+    <div>
+      <div class="sec">Preview &amp; Edit</div>
+
+      <div class="card" id="email-detail" style="display:none">
+        <div style="margin-bottom:12px">
+          <label>To (Email)</label>
+          <input type="text" id="detail-to" readonly style="color:var(--accent)">
+        </div>
+        <div style="margin-bottom:12px">
+          <label>Subject (editable)</label>
+          <input type="text" id="detail-subject">
+        </div>
+        <div style="margin-bottom:14px">
+          <label>Body (editable)</label>
+          <textarea id="detail-body" rows="18"></textarea>
+        </div>
+        <button class="btn btn-ghost" onclick="saveEdit()">💾 Save Changes</button>
+      </div>
+
+      <div class="placeholder" id="email-placeholder">
+        ← Click any email in the list to preview and edit it
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB 3 — SETTINGS
+══════════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-settings">
+  <div class="card" style="max-width:520px;margin:0 auto">
+    <div class="sec">Gmail Configuration</div>
+
+    <div class="settings-grid">
+      <label>Your Name</label>
+      <input type="text" id="cfg-name" placeholder="Shivam Garud">
+
+      <label>Gmail Address</label>
+      <input type="email" id="cfg-email" placeholder="you@gmail.com">
+
+      <label>Gmail App Password</label>
+      <input type="password" id="cfg-pass" placeholder="xxxx xxxx xxxx xxxx">
+    </div>
+
+    <div style="margin-top:20px">
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+    </div>
+
+    <div class="hint">
+      ⚠️ You must use a <strong>Gmail App Password</strong> — not your normal Gmail password.<br>
+      1. Enable 2-Step Verification at <a href="https://myaccount.google.com/security" target="_blank">myaccount.google.com/security</a><br>
+      2. Go to <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com/apppasswords</a><br>
+      3. Click Create → Select "Mail" → Copy the 16-character password<br>
+      4. Paste above and click Save Settings
+    </div>
+  </div>
+
+  <!-- TEST EMAIL CARD -->
+  <div class="card" style="max-width:520px;margin:20px auto 0">
+    <div class="sec">Test Your Gmail Setup</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.7">
+      Before sending bulk emails, send a test email to yourself or a secondary Gmail
+      to confirm your App Password is working correctly.
+    </p>
+    <div style="margin-bottom:14px">
+      <label>Send Test Email To (your secondary email)</label>
+      <input type="email" id="test-to" placeholder="your.secondary@gmail.com">
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="sendTestEmail()" id="test-btn"
+              style="border-color:var(--accent);color:var(--accent)">
+        📨 Send Test Email
+      </button>
+      <span id="test-result" style="font-size:12px"></span>
+    </div>
+    <div id="test-detail" style="display:none;margin-top:14px;padding:12px;background:var(--bg);
+         border-radius:6px;font-size:11px;line-height:1.8;border:1px solid var(--border)"></div>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+
+<!-- ══ STATUS BAR ══════════════════════════════════════════════════════════ -->
+<div class="statusbar">
+  <span><span class="dot"></span><span id="status-msg">Ready</span></span>
+  <span style="color:var(--muted);font-size:10px">Cold Mailer v1.0 · Shivam Garud · +91 7434895001</span>
+</div>
+
+<!-- ══ TOAST ════════════════════════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════════════════════════ -->
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let excelRows    = [];
+let emails       = [];
+let resumePath   = "";
+let selectedIdx  = -1;
+
+const SUBJECTS = [
+  "Aspiring DevOps Engineer – Open to Opportunities",
+  "DevOps & Cloud Engineer – Seeking Role at {company}",
+  "Fresher DevOps Engineer – AWS & Kubernetes Experience",
+  "Application for DevOps/Cloud Engineer Position",
+  "Shivam Garud – DevOps Engineer | AWS | Docker | K8s",
+];
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  buildSubjects();
+  loadSettings();
+});
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll(".tab").forEach(t  => t.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("page-" + name).classList.add("active");
+}
+
+// ── SUBJECTS ──────────────────────────────────────────────────────────────────
+function buildSubjects() {
+  const el = document.getElementById("subject-list");
+  SUBJECTS.forEach((s, i) => {
+    const div = document.createElement("label");
+    div.className = "subj-opt" + (i === 0 ? " picked" : "");
+    div.id = "subj-" + i;
+    div.innerHTML = `<input type="radio" name="subject" value="${i}" ${i===0?"checked":""}
+                     onchange="pickSubj(${i})"><span>${s}</span>`;
+    el.appendChild(div);
+  });
+}
+
+function pickSubj(i) {
+  document.querySelectorAll(".subj-opt").forEach(e => e.classList.remove("picked"));
+  document.getElementById("subj-" + i).classList.add("picked");
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const r = await fetch("/api/config");
+    const d = await r.json();
+    document.getElementById("cfg-name").value  = d.name  || "";
+    document.getElementById("cfg-email").value = d.email || "";
+  } catch(e) {}
+}
+
+async function saveSettings() {
+  const data = {
+    name:         document.getElementById("cfg-name").value.trim(),
+    email:        document.getElementById("cfg-email").value.trim(),
+    app_password: document.getElementById("cfg-pass").value.trim(),
+  };
+  if (!data.email) { toast("Enter your Gmail address", "err"); return; }
+  if (!data.app_password) { toast("Enter your App Password", "err"); return; }
+  const r = await fetch("/api/config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  const d = await r.json();
+  if (d.ok) toast("Settings saved ✓", "ok");
+}
+
+// ── FILE DRAG & DROP ──────────────────────────────────────────────────────────
+function dropFile(e, type) {
+  e.preventDefault();
+  document.getElementById(type + "-drop").classList.remove("drag");
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  type === "excel" ? uploadExcel(f) : uploadResume(f);
+}
+
+// ── UPLOAD EXCEL ──────────────────────────────────────────────────────────────
+async function uploadExcel(file) {
+  if (!file) return;
+  status("Uploading Excel file...");
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const r = await fetch("/api/upload_excel", { method: "POST", body: fd });
+    const d = await r.json();
+    if (d.error) { toast(d.error, "err"); return; }
+    excelRows = d.rows;
+    document.getElementById("excel-name").textContent   = "✅ " + file.name;
+    document.getElementById("excel-status").textContent = `${d.total} rows loaded`;
+    document.getElementById("row-to").value             = d.total;
+    renderExcelTable();
+    document.getElementById("excel-preview-card").style.display = "block";
+    status(`Loaded ${d.total} rows`);
+    toast(`${d.total} rows loaded ✓`, "ok");
+  } catch(e) {
+    toast("Upload failed: " + e.message, "err");
+  }
+}
+
+function renderExcelTable() {
+  const tb = document.getElementById("excel-tbody");
+  tb.innerHTML = "";
+  excelRows.forEach((r, i) => {
+    tb.innerHTML += `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td>${r.sr}</td><td>${r.name}</td>
+      <td style="color:var(--accent)">${r.email}</td>
+      <td>${r.title}</td><td>${r.company}</td>
+    </tr>`;
+  });
+}
+
+function selectAll() {
+  document.getElementById("row-from").value = 1;
+  document.getElementById("row-to").value   = excelRows.length;
+}
+
+// ── UPLOAD RESUME ─────────────────────────────────────────────────────────────
+async function uploadResume(file) {
+  if (!file) return;
+  status("Uploading resume...");
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const r = await fetch("/api/upload_resume", { method: "POST", body: fd });
+    const d = await r.json();
+    if (d.ok) {
+      resumePath = d.path;
+      document.getElementById("resume-name").textContent = "✅ " + file.name;
+      toast("Resume uploaded ✓", "ok");
+      status("Resume ready: " + file.name);
+    }
+  } catch(e) {
+    toast("Resume upload failed", "err");
+  }
+}
+
+// ── GENERATE EMAILS ───────────────────────────────────────────────────────────
+async function generateEmails() {
+  if (!excelRows.length) { toast("Upload an Excel file first", "err"); return; }
+
+  const from   = parseInt(document.getElementById("row-from").value) - 1;
+  const to     = parseInt(document.getElementById("row-to").value);
+  const subset = excelRows.slice(from, to);
+  if (!subset.length) { toast("No rows in selected range", "err"); return; }
+
+  const subjIdx = parseInt(document.querySelector('input[name="subject"]:checked').value);
+  status("Generating emails...");
+
+  try {
+    const r = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows: subset, subject_idx: subjIdx })
+    });
+    const d = await r.json();
+    emails = d.emails;
+    renderEmailList();
+    document.getElementById("email-count").textContent = emails.length;
+    toast(`${emails.length} emails generated ✓`, "ok");
+    status(`${emails.length} emails ready — go to Preview & Send`);
+    // Auto switch to preview tab
+    document.querySelectorAll(".tab")[1].click();
+  } catch(e) {
+    toast("Generate failed: " + e.message, "err");
+  }
+}
+
+// ── EMAIL LIST ────────────────────────────────────────────────────────────────
+function renderEmailList() {
+  const tb = document.getElementById("email-tbody");
+  tb.innerHTML = "";
+  emails.forEach((em, i) => {
+    let actionCell;
+    if (em._status === "sent") {
+      actionCell = `<span style="color:var(--green);font-size:11px;font-weight:700">✅ Sent</span>`;
+    } else if (em._status === "failed") {
+      actionCell = `<span style="color:var(--red);font-size:11px;font-weight:700" title="${em._error||''}">❌ Failed</span>`;
+    } else if (em._status === "sending") {
+      actionCell = `<span style="color:var(--accent);font-size:11px">⏳ Sending...</span>`;
+    } else {
+      actionCell = `<button class="btn btn-danger" onclick="deleteEmail(event,${i})">✕</button>`;
+    }
+    tb.innerHTML += `<tr class="clickable${i===selectedIdx?" selected":""}" id="erow-${i}" onclick="selectEmail(${i})">
+      <td style="color:var(--muted)">${i+1}</td>
+      <td>${em.name}</td>
+      <td style="color:var(--accent);font-size:11px">${em.to}</td>
+      <td>${actionCell}</td>
+    </tr>`;
+  });
+}
+
+function selectEmail(i) {
+  if (selectedIdx >= 0) {
+    const old = document.getElementById("erow-"+selectedIdx);
+    if (old) old.classList.remove("selected");
+  }
+  selectedIdx = i;
+  document.getElementById("erow-"+i).classList.add("selected");
+  const em = emails[i];
+  document.getElementById("detail-to").value      = em.to;
+  document.getElementById("detail-subject").value  = em.subject;
+  document.getElementById("detail-body").value     = em.body;
+  document.getElementById("email-detail").style.display      = "block";
+  document.getElementById("email-placeholder").style.display = "none";
+}
+
+function saveEdit() {
+  if (selectedIdx < 0) return;
+  emails[selectedIdx].subject = document.getElementById("detail-subject").value;
+  emails[selectedIdx].body    = document.getElementById("detail-body").value;
+  toast("Changes saved ✓", "ok");
+}
+
+function deleteEmail(e, i) {
+  e.stopPropagation();
+  if (!confirm(`Delete email to ${emails[i].name} (${emails[i].to})?`)) return;
+  emails.splice(i, 1);
+  selectedIdx = -1;
+  renderEmailList();
+  document.getElementById("email-count").textContent        = emails.length;
+  document.getElementById("email-detail").style.display     = "none";
+  document.getElementById("email-placeholder").style.display = "block";
+  toast("Email removed", "ok");
+}
+
+// ── SEND ALL ──────────────────────────────────────────────────────────────────
+async function sendAll() {
+  if (!emails.length) { toast("No emails to send. Generate first.", "err"); return; }
+  if (!confirm(`Send ${emails.length} emails now?\n\nMake sure Settings are saved.`)) return;
+
+  const sendBtn = document.getElementById("send-btn");
+  sendBtn.disabled = true;
+  document.getElementById("prog-wrap").style.display = "block";
+  document.getElementById("prog-bar").style.width = "0%";
+  document.getElementById("prog-txt").textContent = "Connecting to Gmail...";
+  status("Sending emails one by one...");
+
+  // Send one by one so we can update status per row
+  let sent = 0, failed = 0;
+  const total = emails.length;
+
+  for (let i = 0; i < total; i++) {
+    const em = emails[i];
+    emails[i]._status = "sending";
+    renderEmailList();
+    document.getElementById("prog-txt").textContent = `Sending ${i+1} of ${total}: ${em.to}`;
+    status(`Sending ${i+1}/${total}: ${em.name} <${em.to}>`);
+
+    try {
+      const r = await fetch("/api/send_one", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: em,
+          resume_path: resumePath
+        })
+      });
+      const d = await r.json();
+
+      if (d.error) {
+        emails[i]._status = "failed";
+        emails[i]._error  = d.error;
+        failed++;
+        console.error("Failed:", em.to, d.error);
+      } else {
+        emails[i]._status = "sent";
+        sent++;
+      }
+    } catch(e) {
+      emails[i]._status = "failed";
+      emails[i]._error  = e.message;
+      failed++;
+    }
+
+    // Update progress bar
+    document.getElementById("prog-bar").style.width = `${Math.round(((i+1)/total)*100)}%`;
+    renderEmailList();
+  }
+
+  sendBtn.disabled = false;
+  const msg = `✅ Sent: ${sent}  ${failed ? "❌ Failed: "+failed : ""}  (out of ${total})`;
+  document.getElementById("prog-txt").textContent = msg;
+  toast(msg, failed ? "err" : "ok");
+  status(msg);
+}
+
+// ── TEST EMAIL ────────────────────────────────────────────────────────────────
+async function sendTestEmail() {
+  const testTo  = document.getElementById("test-to").value.trim();
+  const name    = document.getElementById("cfg-name").value.trim();
+  const email   = document.getElementById("cfg-email").value.trim();
+  const pass    = document.getElementById("cfg-pass").value.trim();
+
+  if (!email || !pass) {
+    toast("Fill in your Gmail + App Password above first, then Save Settings", "err");
+    return;
+  }
+  if (!testTo) {
+    toast("Enter a test recipient email address", "err");
+    return;
+  }
+
+  const btn    = document.getElementById("test-btn");
+  const result = document.getElementById("test-result");
+  const detail = document.getElementById("test-detail");
+  btn.disabled = true;
+  btn.textContent = "⏳ Sending...";
+  result.textContent = "";
+  detail.style.display = "none";
+
+  try {
+    const r = await fetch("/api/test_email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ test_to: testTo, name, email, app_password: pass })
+    });
+    const d = await r.json();
+    btn.disabled = false;
+    btn.textContent = "📨 Send Test Email";
+
+    if (d.ok) {
+      result.innerHTML = `<span style="color:var(--green)">✅ ${d.message}</span>`;
+      detail.style.display = "none";
+      toast("Test email sent! Check your inbox.", "ok");
+    } else {
+      result.innerHTML = `<span style="color:var(--red)">❌ Failed</span>`;
+      detail.style.display = "block";
+      detail.style.color   = "var(--red)";
+      detail.textContent   = d.error;
+      toast("Test failed — see details below", "err");
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = "📨 Send Test Email";
+    result.innerHTML = `<span style="color:var(--red)">❌ Network error</span>`;
+    toast("Network error: " + e.message, "err");
+  }
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function status(msg) {
+  document.getElementById("status-msg").textContent = msg;
+}
+
+let toastTimer;
+function toast(msg, type) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className   = "show " + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 3800);
+}
+</script>
+</body>
+</html>
